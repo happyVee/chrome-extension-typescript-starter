@@ -2,12 +2,8 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 const Popup = () => {
-  const [count, setCount] = useState(0);
+  const [interval, setInterval] = useState<number>(1);
   const [currentURL, setCurrentURL] = useState<string>();
-
-  useEffect(() => {
-    chrome.action.setBadgeText({ text: count.toString() });
-  }, [count]);
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -15,36 +11,35 @@ const Popup = () => {
     });
   }, []);
 
-  const changeBackground = () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      const tab = tabs[0];
-      if (tab.id) {
-        chrome.tabs.sendMessage(
-          tab.id,
-          {
-            color: "#555555",
-          },
-          (msg) => {
-            console.log("result message:", msg);
-          }
-        );
-      }
-    });
+  const startAlarm = () => {
+    console.log("startAlarm")
+    // Convert the input interval from seconds to minutes required by the API
+    const periodInMinutes = interval / 60;
+    chrome.alarms.create({ periodInMinutes });
+  };
+
+  const stopAlarm = () => {
+    console.log("stopAlarm")
+    chrome.alarms.clearAll();
   };
 
   return (
     <>
+      <h1>Auto Refresh</h1>
+      <p>Set interval (in seconds):</p>
+      <input 
+        id="interval" 
+        type="number" 
+        min="1" 
+        value={interval} 
+        onChange={(e) => setInterval(Number(e.target.value))}
+      />
+      <button id="start" onClick={startAlarm}>Start</button>
+      <button id="stop" onClick={stopAlarm}>Stop</button>
       <ul style={{ minWidth: "700px" }}>
         <li>Current URL: {currentURL}</li>
         <li>Current Time: {new Date().toLocaleTimeString()}</li>
       </ul>
-      <button
-        onClick={() => setCount(count + 1)}
-        style={{ marginRight: "5px" }}
-      >
-        count up
-      </button>
-      <button onClick={changeBackground}>change background</button>
     </>
   );
 };
