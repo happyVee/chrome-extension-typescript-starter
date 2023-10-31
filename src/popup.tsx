@@ -4,23 +4,24 @@ import { createRoot } from "react-dom/client";
 const Popup = () => {
   const [interval, setInterval] = useState<number>(1);
   const [currentURL, setCurrentURL] = useState<string>();
+  const [tabId, setTabId] = useState<number>();
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      console.log(tabs)
       setCurrentURL(tabs[0].url);
+      setTabId(tabs[0].id);
     });
   }, []);
 
   const startAlarm = () => {
     console.log("startAlarm")
-    // Convert the input interval from seconds to minutes required by the API
-    const periodInMinutes = interval / 60;
-    chrome.alarms.create({ periodInMinutes });
+    chrome.runtime.sendMessage({action: "startCountdown", time: interval, tabId: tabId});
   };
-
+  
   const stopAlarm = () => {
     console.log("stopAlarm")
-    chrome.alarms.clearAll();
+    chrome.runtime.sendMessage({action: "stopCountdown", time: 0, tabId: tabId});
   };
 
   return (
@@ -38,6 +39,7 @@ const Popup = () => {
       <button id="stop" onClick={stopAlarm}>Stop</button>
       <ul style={{ minWidth: "700px" }}>
         <li>Current URL: {currentURL}</li>
+        <li>Current tabid: {tabId}</li>
         <li>Current Time: {new Date().toLocaleTimeString()}</li>
       </ul>
     </>

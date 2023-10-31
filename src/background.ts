@@ -1,26 +1,24 @@
 console.log("installed")
 
-chrome.runtime.onInstalled.addListener((): void => {
-  try {
-    console.log("installed")
-    chrome.alarms.create({periodInMinutes: 1});
-  } catch (error) {
-    console.error("Error in onInstalled event: ", error);
+chrome.runtime.onMessage.addListener((request: { action: string; time: number; tabId: number}, sender, sendResponse) => {
+  if (request.action === "startCountdown") {
+    // 首先清除已经存在的定时器
+    chrome.alarms.clear(request.tabId.toString(), (wasCleared) => {
+      // 然后创建新的定时器
+      chrome.alarms.create(request.tabId.toString(), {periodInMinutes: request.time / 60});
+    });
+  } else if (request.action === "stopCountdown") {
+    // 删除对应的定时器
+    chrome.alarms.clear(request.tabId.toString());
   }
 });
 
-chrome.alarms.onAlarm.addListener((): void => {
-  try {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs: chrome.tabs.Tab[]): void => {
-      console.log(tabs)
-      if (tabs.length > 0) {
-        const tab = tabs[0];
-        if (tab.id !== undefined) {
-          chrome.tabs.reload(tab.id);
-        }
-      }
-    });
-  } catch (error) {
-    console.error("Error in onAlarm event: ", error);
-  }
+chrome.runtime.onInstalled.addListener((): void => {
+  console.log("installed")
+});
+
+chrome.alarms.onAlarm.addListener((alarm): void => {
+  console.log("refresh tabId: " + parseInt(alarm.name))
+  // 定时器的名字是 tab 的 ID，所以我们可以用它来刷新对应的页面
+  chrome.tabs.reload(parseInt(alarm.name));
 });
